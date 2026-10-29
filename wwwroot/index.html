@@ -1,0 +1,347 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local RAG - Sitemap & Chunking Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --primary: #38bdf8;
+            --primary-hover: #0284c7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+            header h1 {
+                font-size: 26px;
+                color: var(--primary);
+                margin-bottom: 8px;
+            }
+
+            header p {
+                color: var(--text-muted);
+                font-size: 14px;
+            }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+            .card h2 {
+                font-size: 18px;
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 12px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input[type="text"], input[type="number"], textarea {
+            background-color: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+
+            input:focus, textarea:focus {
+                border-color: var(--primary);
+            }
+
+        button {
+            background-color: var(--primary);
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+            button:hover {
+                background-color: var(--primary-hover);
+            }
+
+            button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+        /* Status & Logs */
+        .status-box {
+            background-color: #0f172a;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+            max-height: 220px;
+            overflow-y: auto;
+            color: #cbd5e1;
+            border: 1px solid var(--border-color);
+        }
+
+        .log-entry {
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px dashed #1e293b;
+        }
+
+        .badge {
+            background: #0369a1;
+            color: #e0f2fe;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        /* Chat Section */
+        .chat-history {
+            background-color: #0f172a;
+            border-radius: 8px;
+            padding: 16px;
+            height: 350px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            max-width: 85%;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .user-message {
+            background-color: #1e3a8a;
+            align-self: flex-end;
+            color: #fff;
+        }
+
+        .bot-message {
+            background-color: #1e293b;
+            border: 1px solid var(--border-color);
+            align-self: flex-start;
+        }
+
+        .sources-tag {
+            font-size: 11px;
+            color: var(--primary);
+            margin-top: 8px;
+            display: block;
+            border-top: 1px solid #334155;
+            padding-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Local RAG - Sitemap & Chunking Dashboard</h1>
+        <p>Crawl sitemaps, generate sliding-window chunks with Ollama, and query with Llama 3.2</p>
+    </header>
+
+    <div class="container">
+        <!-- LEFT PANEL: SITEMAP & INGESTION -->
+        <div class="card">
+            <h2>Sitemap Ingestion & Chunking <span id="dbStats" class="badge">Loading DB...</span></h2>
+
+            <div class="form-group">
+                <label>Sitemap URL (XML)</label>
+                <input type="text" id="sitemapUrl" placeholder="https://example.com/sitemap.xml" value="https://dotnet.microsoft.com/sitemap.xml">
+            </div>
+
+            <div class="form-group">
+                <label>Max Pages to Crawl (for testing laptop speed)</label>
+                <input type="number" id="maxPages" value="3" min="1" max="20">
+            </div>
+
+            <button id="crawlBtn" onclick="startCrawl()">Crawl & Chunk Website</button>
+
+            <div class="form-group">
+                <label>Live Progress & Chunking Logs</label>
+                <div id="logs" class="status-box">System ready. Enter sitemap and click crawl.</div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: RAG CHAT -->
+        <div class="card">
+            <h2>Interactive RAG Chat</h2>
+
+            <div id="chatHistory" class="chat-history">
+                <div class="message bot-message">
+                    Hello! Once you crawl a website, ask me any question based on its indexed content.
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <input type="text" id="chatQuery" placeholder="Ask a question about the website..." style="flex: 1;" onkeypress="if(event.key === 'Enter') sendQuery()">
+                <button id="sendBtn" onclick="sendQuery()">Ask</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update stats on load
+        updateStats();
+
+        async function updateStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('dbStats').innerText = `${data.totalPages} Pages | ${data.totalChunks} Chunks`;
+            } catch (err) {
+                document.getElementById('dbStats').innerText = 'Offline';
+            }
+        }
+
+        async function startCrawl() {
+            const sitemapUrl = document.getElementById('sitemapUrl').value.trim();
+            const maxPages = parseInt(document.getElementById('maxPages').value) || 3;
+            const logBox = document.getElementById('logs');
+            const crawlBtn = document.getElementById('crawlBtn');
+
+            if (!sitemapUrl) return alert('Please enter a sitemap URL');
+
+            crawlBtn.disabled = true;
+            crawlBtn.innerText = 'Crawling & Embedding... Please wait';
+            logBox.innerHTML = `<div class="log-entry">Connecting to sitemap: ${sitemapUrl}...</div>`;
+
+            try {
+                const res = await fetch('/api/crawl-sitemap', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sitemapUrl, maxPages })
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    logBox.innerHTML += `<div class="log-entry" style="color:#ef4444;">Error: ${data.error}</div>`;
+                } else {
+                    logBox.innerHTML += `<div class="log-entry" style="color:#10b981;">[✓] ${data.message}</div>`;
+                    data.details.forEach(p => {
+                        logBox.innerHTML += `<div class="log-entry"><b>Page:</b> ${p.url}<br><small>Length: ${p.textLength} chars | Chunks created: ${p.chunksCount}</small></div>`;
+                    });
+                    logBox.innerHTML += `<div class="log-entry" style="color:#38bdf8;"><b>Total Chunks Stored: ${data.totalChunks}</b></div>`;
+                }
+            } catch (err) {
+                logBox.innerHTML += `<div class="log-entry" style="color:#ef4444;">Failed to connect to API.</div>`;
+            } finally {
+                crawlBtn.disabled = false;
+                crawlBtn.innerText = 'Crawl & Chunk Website';
+                updateStats();
+            }
+        }
+
+        async function sendQuery() {
+            const queryInput = document.getElementById('chatQuery');
+            const query = queryInput.value.trim();
+            const history = document.getElementById('chatHistory');
+            const sendBtn = document.getElementById('sendBtn');
+
+            if (!query) return;
+
+            // User Message render
+            history.innerHTML += `<div class="message user-message">${escapeHtml(query)}</div>`;
+            queryInput.value = '';
+            history.scrollTop = history.scrollHeight;
+
+            sendBtn.disabled = true;
+            sendBtn.innerText = '...';
+
+            // Placeholder bot message
+            const botMsgId = 'msg-' + Date.now();
+            history.innerHTML += `<div id="${botMsgId}" class="message bot-message">Searching vector database & generating answer...</div>`;
+            history.scrollTop = history.scrollHeight;
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await res.json();
+                const botMsgEl = document.getElementById(botMsgId);
+
+                if (!res.ok) {
+                    botMsgEl.innerText = data.error || 'Failed to retrieve response.';
+                    botMsgEl.style.color = '#ef4444';
+                } else {
+                    let sourcesHtml = data.sources.map(s => `<div>• <a href="${s.url}" target="_blank" style="color:#38bdf8;">${s.url}</a> (Chunk #${s.chunkIndex}, Score: ${s.score.toFixed(3)})</div>`).join('');
+                    botMsgEl.innerHTML = `<div>${escapeHtml(data.answer)}</div><span class="sources-tag"><b>Retrieved Sources:</b><br>${sourcesHtml}</span>`;
+                }
+            } catch (err) {
+                document.getElementById(botMsgId).innerText = 'Error connecting to LLM backend.';
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerText = 'Ask';
+                history.scrollTop = history.scrollHeight;
+            }
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
